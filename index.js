@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const User = require("./schema/userSchema");
 const cors = require("cors");
-const PORT = 8000;
+const PORT = 'https://kindness-server.vercel.app';
 const MONGO_URL =
   process.env.mongourl || null;
 

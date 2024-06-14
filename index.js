@@ -2,13 +2,21 @@ require("dotenv").config({ path: ".env" });
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const Razorpay = require('razorpay');
 const bcrypt = require("bcrypt");
+const crypto = require('crypto'); // Importing crypto module
 const User = require("./schema/userSchema");
+const Transaction = require("./schema/transactionSchema");
 const cors = require("cors");
+
 const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.mongourl || null;
+const JWT_SECRET = process.env.jwtsecret || crypto.randomBytes(64).toString('hex'); // Strong default JWT secret
 
-const JWT_SECRET = process.env.jwtsecret || "secret";
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
 
 const app = express();
 
@@ -35,9 +43,7 @@ app.post("/signup", async (req, res) => {
     const user = await User.create({ email, name, password: hashedPassword });
     const user_data = { name: name, email: email, _id: String(user._id) };
     const token = jwt.sign(user_data, JWT_SECRET);
-    res
-      .status(200)
-      .json({ message: "Signup successful", token, user: user_data });
+    res.status(200).json({ message: "Signup successful", token, user: user_data });
   } catch (err) {
     res.status(400).json({ message: "Email already taken" });
   }
@@ -54,18 +60,15 @@ app.post("/login", async (req, res) => {
     { name: user.name, email: user.email, _id: String(user._id) },
     JWT_SECRET
   );
-  res
-    .status(200)
-    .json({
-      message: "Login successful",
-      token,
-      user: { name: user.name, email: user.email },
-    });
+  res.status(200).json({
+    message: "Login successful",
+    token,
+    user: { name: user.name, email: user.email },
+  });
 });
 
 // Middleware for verifying JWT
 const verifyToken = (req, res, next) => {
- 
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
@@ -93,16 +96,14 @@ app.get("/me", verifyToken, async (req, res) => {
         phone: check_user?.phone,
         address: check_user?.address
       };
-      res
-        .status(200)
-        .json({ message: "User fetched successfully", user: user });
+      res.status(200).json({ message: "User fetched successfully", user: user });
     }
   } catch (err) {
     res.status(400).json({ message: "Something went wrong" });
   }
 });
 
-// for voluntier
+// for volunteer
 
 app.post("/volunteer", verifyToken, async (req, res) => {
   const { phone, address } = req.body;
@@ -113,11 +114,96 @@ app.post("/volunteer", verifyToken, async (req, res) => {
       { new: true }
     );
     if (!user) {
-      return res.status(400).json({ message: "user not found" });
+      return res.status(400).json({ message: "User not found" });
     }
-    res.status(200).json({ message: "User has set to volunteer sucessfully" });
+    res.status(200).json({ message: "User set to volunteer successfully" });
   } catch (err) {
-    res.status(400).json({ message: "something went wrong" });
+    res.status(400).json({ message: "Something went wrong" });
+  }
+});
+
+// get all volunteers
+app.get("/volunteers", async (req, res) => {
+  try {
+    const volunteers = await User.find(
+      { is_volunteer: true },
+      { name: 1, email: 1, _id: 1, phone: 1, address: 1 } // Include _id in the result
+    );
+    if (!volunteers.length) {
+      return res.status(404).json({ message: "No volunteers found" });
+    }
+    res.status(200).json(volunteers);
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+// all volunteers count
+app.get("/volunteers/count", async (req, res) => {
+  try {
+    const count = await User.countDocuments({ is_volunteer: true });
+    res.status(200).json({ count });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+// Generate payment link
+app.post('/createorder', async (req, res) => {
+  const { amount, firstname, lastname, email, phone, address } = req.body; // Added firstname, lastname
+  
+  const options = {
+    amount: amount * 100, // amount in the smallest currency unit
+    currency: "INR",
+    receipt: "receipt#1",
+    payment_capture: 1
+  };
+
+  try {
+    const order = await razorpay.orders.create(options);
+    const transaction = new Transaction({
+      firstname,
+      lastname,
+      email,
+      phone,
+      address,
+      amount,
+      order_id: order.id,
+      status: 'created'
+    });
+    await transaction.save();
+    res.json({ orderId: order.id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+});
+
+// Verify payment and update transaction
+app.post('/verifypayment', async (req, res) => {
+  const { order_id, payment_id, razorpay_signature } = req.body;
+
+  try {
+    const transaction = await Transaction.findOne({ order_id });
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+
+    const generated_signature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(order_id + "|" + payment_id)
+      .digest('hex');
+
+    if (generated_signature === razorpay_signature) {
+      transaction.payment_id = payment_id;
+      transaction.status = 'paid';
+      await transaction.save();
+      res.json({ status: 'Payment successful' });
+    } else {
+      res.status(400).json({ error: 'Invalid signature' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Something went wrong' });
   }
 });
 

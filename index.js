@@ -2,6 +2,7 @@ require("dotenv").config({ path: ".env" });
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const Vote = require('./schema/voteSchema');
 const Razorpay = require('razorpay');
 const bcrypt = require("bcrypt");
 const crypto = require('crypto'); // Importing crypto module
@@ -122,21 +123,40 @@ app.post("/volunteer", verifyToken, async (req, res) => {
   }
 });
 
-// get all volunteers
+//get all volunteers
 app.get("/volunteers", async (req, res) => {
   try {
     const volunteers = await User.find(
       { is_volunteer: true },
-      { name: 1, email: 1, _id: 1, phone: 1, address: 1 } // Include _id in the result
+      { name: 1, email: 1, _id: 1, phone: 1, address: 1 } // Include the necessary fields
     );
+
     if (!volunteers.length) {
       return res.status(404).json({ message: "No volunteers found" });
     }
-    res.status(200).json(volunteers);
+
+    const modifiedVolunteers = volunteers.map(volunteer => {
+      const emailParts = volunteer.email.split('@');
+      const obscuredEmail = '*'.repeat(emailParts[0].length) + '@' + emailParts[1];
+      
+      const obscuredPhone = volunteer.phone ? volunteer.phone.replace(/.(?=.{4})/g, '*') : '';
+      const obscuredAddress = volunteer.address ? volunteer.address.split(' ,').map(word => '*'.repeat(word.length)).join(' ') : '';
+
+      return {
+        ...volunteer._doc, // Spread the existing volunteer fields
+        email: obscuredEmail,
+        phone: obscuredPhone,
+        address: obscuredAddress
+      };
+    });
+
+    res.status(200).json(modifiedVolunteers);
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
+
+
 
 // all volunteers count
 app.get("/volunteers/count", async (req, res) => {
@@ -149,63 +169,132 @@ app.get("/volunteers/count", async (req, res) => {
 });
 
 // Generate payment link
-app.post('/createorder', async (req, res) => {
-  const { amount, firstname, lastname, email, phone, address } = req.body; // Added firstname, lastname
+// app.post('/createorder', async (req, res) => {
+//   const { amount, firstname, lastname, email, phone, address } = req.body; // Added firstname, lastname
   
-  const options = {
-    amount: amount * 100, // amount in the smallest currency unit
-    currency: "INR",
-    receipt: "receipt#1",
-    payment_capture: 1
-  };
+//   const options = {
+//     amount: amount * 100, // amount in the smallest currency unit
+//     currency: "INR",
+//     receipt: "receipt#1",
+//     payment_capture: 1
+//   };
 
+//   try {
+//     const order = await razorpay.orders.create(options);
+//     const transaction = new Transaction({
+//       firstname,
+//       lastname,
+//       email,
+//       phone,
+//       address,
+//       amount,
+//       order_id: order.id,
+//       status: 'created'
+//     });
+//     await transaction.save();
+//     res.json({ orderId: order.id });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: 'Something went wrong' });
+//   }
+// });
+
+// // Verify payment and update transaction
+// app.post('/verifypayment', async (req, res) => {
+//   const { order_id, payment_id, razorpay_signature } = req.body;
+
+//   try {
+//     const transaction = await Transaction.findOne({ order_id });
+//     if (!transaction) {
+//       return res.status(404).json({ error: 'Transaction not found' });
+//     }
+
+//     const generated_signature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+//       .update(order_id + "|" + payment_id)
+//       .digest('hex');
+
+//     if (generated_signature === razorpay_signature) {
+//       transaction.payment_id = payment_id;
+//       transaction.status = 'paid';
+//       await transaction.save();
+//       res.json({ status: 'Payment successful' });
+//     } else {
+//       res.status(400).json({ error: 'Invalid signature' });
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: 'Something went wrong' });
+//   }
+// });
+
+
+
+// for Voting
+
+app.post('/vote', verifyToken, async (req, res) => {
+  const { voteFormId, vote } = req.body;
+  
+  if (!['yes', 'no'].includes(vote)) {
+    return res.status(400).json({ message: "Invalid vote option" });
+  }
+  
   try {
-    const order = await razorpay.orders.create(options);
-    const transaction = new Transaction({
-      firstname,
-      lastname,
-      email,
-      phone,
-      address,
-      amount,
-      order_id: order.id,
-      status: 'created'
+    const existingVote = await Vote.findOne({ userId: req.user._id, voteFormId });
+
+    if (existingVote) {
+      return res.status(400).json({ message: "User has already voted" });
+    }
+
+    const newVote = new Vote({
+      userId: req.user._id,
+      voteFormId,
+      vote
     });
-    await transaction.save();
-    res.json({ orderId: order.id });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Something went wrong' });
+
+    await newVote.save();
+    res.status(200).json({ message: "Vote cast successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
   }
 });
 
-// Verify payment and update transaction
-app.post('/verifypayment', async (req, res) => {
-  const { order_id, payment_id, razorpay_signature } = req.body;
+// Endpoint to check if user has already voted
+app.get('/hasvoted/:voteFormId', verifyToken, async (req, res) => {
+  const { voteFormId } = req.params;
 
   try {
-    const transaction = await Transaction.findOne({ order_id });
-    if (!transaction) {
-      return res.status(404).json({ error: 'Transaction not found' });
-    }
+    const existingVote = await Vote.findOne({ userId: req.user._id, voteFormId });
 
-    const generated_signature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(order_id + "|" + payment_id)
-      .digest('hex');
-
-    if (generated_signature === razorpay_signature) {
-      transaction.payment_id = payment_id;
-      transaction.status = 'paid';
-      await transaction.save();
-      res.json({ status: 'Payment successful' });
+    if (existingVote) {
+      return res.status(200).json({ hasVoted: true, vote: existingVote.vote });
     } else {
-      res.status(400).json({ error: 'Invalid signature' });
+      return res.status(200).json({ hasVoted: false });
     }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Something went wrong' });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
   }
 });
+
+// Endpoint to get the total votes for a specific form ID
+app.get('/countvotes/:voteFormId', async (req, res) => {
+  const { voteFormId } = req.params;
+
+  try {
+    const yesVotesCount = await Vote.countDocuments({ voteFormId, vote: 'yes' });
+    const noVotesCount = await Vote.countDocuments({ voteFormId, vote: 'no' });
+
+    res.status(200).json({ 
+      yes: yesVotesCount, 
+      no: noVotesCount, 
+      total: yesVotesCount + noVotesCount 
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

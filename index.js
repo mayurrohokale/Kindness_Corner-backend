@@ -2,21 +2,22 @@ require("dotenv").config({ path: ".env" });
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
-const Vote = require('./schema/voteSchema');
-const Razorpay = require('razorpay');
+const Vote = require("./schema/voteSchema");
+const Razorpay = require("razorpay");
 const bcrypt = require("bcrypt");
-const crypto = require('crypto'); // Importing crypto module
+const crypto = require("crypto"); // Importing crypto module
 const User = require("./schema/userSchema");
 const Transaction = require("./schema/transactionSchema");
 const cors = require("cors");
 
 const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.mongourl || null;
-const JWT_SECRET = process.env.jwtsecret || crypto.randomBytes(64).toString('hex'); // Strong default JWT secret
+const JWT_SECRET =
+  process.env.jwtsecret || crypto.randomBytes(64).toString("hex"); // Strong default JWT secret
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
 const app = express();
@@ -44,7 +45,9 @@ app.post("/signup", async (req, res) => {
     const user = await User.create({ email, name, password: hashedPassword });
     const user_data = { name: name, email: email, _id: String(user._id) };
     const token = jwt.sign(user_data, JWT_SECRET);
-    res.status(200).json({ message: "Signup successful", token, user: user_data });
+    res
+      .status(200)
+      .json({ message: "Signup successful", token, user: user_data });
   } catch (err) {
     res.status(400).json({ message: "Email already taken" });
   }
@@ -95,9 +98,11 @@ app.get("/me", verifyToken, async (req, res) => {
         email: check_user.email,
         is_volunteer: check_user?.is_volunteer,
         phone: check_user?.phone,
-        address: check_user?.address
+        address: check_user?.address,
       };
-      res.status(200).json({ message: "User fetched successfully", user: user });
+      res
+        .status(200)
+        .json({ message: "User fetched successfully", user: user });
     }
   } catch (err) {
     res.status(400).json({ message: "Something went wrong" });
@@ -135,18 +140,28 @@ app.get("/volunteers", async (req, res) => {
       return res.status(404).json({ message: "No volunteers found" });
     }
 
-    const modifiedVolunteers = volunteers.map(volunteer => {
-      const emailParts = volunteer.email.split('@');
-      const obscuredEmail = '*'.repeat(emailParts[0].length) + '@' + emailParts[1];
-      
-      const obscuredPhone = volunteer.phone ? volunteer.phone.replace(/.(?=.{4})/g, '*') : '';
-      const obscuredAddress = volunteer.address ? volunteer.address.split(' ,').map(word => '*'.repeat(word.length)).join(' ') : '';
+    const modifiedVolunteers = volunteers.map((volunteer) => {
+      const emailParts = volunteer.email.split("@");
+      const firstPart = emailParts[0];
+      const firstThree = firstPart.slice(0, 3);
+      const obscuredEmail =
+        firstThree + "*".repeat(firstPart.length - 3) + "@" + emailParts[1];
+
+      const obscuredPhone = volunteer.phone
+        ? volunteer.phone.replace(/.(?=.{4})/g, "*")
+        : "";
+      const obscuredAddress = volunteer.address
+        ? volunteer.address
+            .split(" ,")
+            .map((word) => "*".repeat(word.length))
+            .join(" ")
+        : "";
 
       return {
         ...volunteer._doc, // Spread the existing volunteer fields
         email: obscuredEmail,
         phone: obscuredPhone,
-        address: obscuredAddress
+        address: obscuredAddress,
       };
     });
 
@@ -155,8 +170,6 @@ app.get("/volunteers", async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
-
-
 
 // all volunteers count
 app.get("/volunteers/count", async (req, res) => {
@@ -169,9 +182,10 @@ app.get("/volunteers/count", async (req, res) => {
 });
 
 // Generate payment link
+
 // app.post('/createorder', async (req, res) => {
 //   const { amount, firstname, lastname, email, phone, address } = req.body; // Added firstname, lastname
-  
+
 //   const options = {
 //     amount: amount * 100, // amount in the smallest currency unit
 //     currency: "INR",
@@ -227,19 +241,20 @@ app.get("/volunteers/count", async (req, res) => {
 //   }
 // });
 
-
-
 // for Voting
 
-app.post('/vote', verifyToken, async (req, res) => {
+app.post("/vote", verifyToken, async (req, res) => {
   const { voteFormId, vote } = req.body;
-  
-  if (!['yes', 'no'].includes(vote)) {
+
+  if (!["yes", "no"].includes(vote)) {
     return res.status(400).json({ message: "Invalid vote option" });
   }
-  
+
   try {
-    const existingVote = await Vote.findOne({ userId: req.user._id, voteFormId });
+    const existingVote = await Vote.findOne({
+      userId: req.user._id,
+      voteFormId,
+    });
 
     if (existingVote) {
       return res.status(400).json({ message: "User has already voted" });
@@ -248,7 +263,7 @@ app.post('/vote', verifyToken, async (req, res) => {
     const newVote = new Vote({
       userId: req.user._id,
       voteFormId,
-      vote
+      vote,
     });
 
     await newVote.save();
@@ -259,11 +274,14 @@ app.post('/vote', verifyToken, async (req, res) => {
 });
 
 // Endpoint to check if user has already voted
-app.get('/hasvoted/:voteFormId', verifyToken, async (req, res) => {
+app.get("/hasvoted/:voteFormId", verifyToken, async (req, res) => {
   const { voteFormId } = req.params;
 
   try {
-    const existingVote = await Vote.findOne({ userId: req.user._id, voteFormId });
+    const existingVote = await Vote.findOne({
+      userId: req.user._id,
+      voteFormId,
+    });
 
     if (existingVote) {
       return res.status(200).json({ hasVoted: true, vote: existingVote.vote });
@@ -276,25 +294,25 @@ app.get('/hasvoted/:voteFormId', verifyToken, async (req, res) => {
 });
 
 // Endpoint to get the total votes for a specific form ID
-app.get('/countvotes/:voteFormId', async (req, res) => {
+app.get("/countvotes/:voteFormId", async (req, res) => {
   const { voteFormId } = req.params;
 
   try {
-    const yesVotesCount = await Vote.countDocuments({ voteFormId, vote: 'yes' });
-    const noVotesCount = await Vote.countDocuments({ voteFormId, vote: 'no' });
+    const yesVotesCount = await Vote.countDocuments({
+      voteFormId,
+      vote: "yes",
+    });
+    const noVotesCount = await Vote.countDocuments({ voteFormId, vote: "no" });
 
-    res.status(200).json({ 
-      yes: yesVotesCount, 
-      no: noVotesCount, 
-      total: yesVotesCount + noVotesCount 
+    res.status(200).json({
+      yes: yesVotesCount,
+      no: noVotesCount,
+      total: yesVotesCount + noVotesCount,
     });
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
-
-
-
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

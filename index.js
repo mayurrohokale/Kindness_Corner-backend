@@ -112,11 +112,11 @@ app.get("/me", verifyToken, async (req, res) => {
 // for volunteer
 
 app.post("/volunteer", verifyToken, async (req, res) => {
-  const { phone, address } = req.body;
+  const { phone, address, state, city, pincode } = req.body;
   try {
     const user = await User.findOneAndUpdate(
       { email: req.user.email },
-      { $set: { phone, address, is_volunteer: true } },
+      { $set: { phone, address, state, city, pincode, is_volunteer: true } },
       { new: true }
     );
     if (!user) {
@@ -133,7 +133,7 @@ app.get("/volunteers", async (req, res) => {
   try {
     const volunteers = await User.find(
       { is_volunteer: true },
-      { name: 1, email: 1, _id: 1, phone: 1, address: 1 } // Include the necessary fields
+      { name: 1, email: 1, _id: 1, phone: 1, city: 1, pincode: 1 } // Include the necessary fields
     );
 
     if (!volunteers.length) {
@@ -150,18 +150,14 @@ app.get("/volunteers", async (req, res) => {
       const obscuredPhone = volunteer.phone
         ? volunteer.phone.replace(/.(?=.{4})/g, "*")
         : "";
-      const obscuredAddress = volunteer.address
-        ? volunteer.address
-            .split(" ,")
-            .map((word) => "*".repeat(word.length))
-            .join(" ")
-        : "";
+     
 
       return {
         ...volunteer._doc, // Spread the existing volunteer fields
         email: obscuredEmail,
         phone: obscuredPhone,
-        address: obscuredAddress,
+        city : volunteer.city
+       
       };
     });
 

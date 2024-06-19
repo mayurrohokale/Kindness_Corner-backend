@@ -8,6 +8,9 @@ const userSchema = mongoose.Schema({
   created_at: { type: Date, default: Date.utcnow },
   phone: {type: String},
   address: {type:String, unique: false},
+  state: {type:String},
+  city: {type:String},
+  pincode: {type:Number},
   is_volunteer: {type: Boolean, default:false},
 });
 

@@ -192,7 +192,7 @@ app.get("/volunteers", async (req, res) => {
   try {
     const volunteers = await User.find(
       { is_volunteer: true },
-      { name: 1, email: 1, _id: 1, phone: 1, city: 1, pincode: 1 } // Include the necessary fields
+      { name: 1, email: 1, _id: 1, phone: 1, city: 1, pincode: 1, state: 1 } // Include the necessary fields
     );
 
     if (!volunteers.length) {
@@ -368,6 +368,36 @@ app.get("/countvotes/:voteFormId", async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
+
+// ADMIN PANEL
+
+app.get("/volunteers-admin", async (req, res) => {
+  try {
+    const volunteers = await User.find();
+
+ 
+    res.status(200).json(volunteers);
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+
+
+// USERS COUNT
+
+app.get("/users-count", async (req, res) => {
+  try {
+    const users = await User.find();
+    res.status(200).json(users.length);
+    } catch (err) {
+      res.status(500).json({ message: "Something went wrong" });
+      }
+})
+
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

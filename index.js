@@ -7,6 +7,7 @@ const Razorpay = require("razorpay");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto"); // Importing crypto module
 const User = require("./schema/userSchema");
+const Donation = require("./schema/donationSchema");
 const Transaction = require("./schema/transactionSchema");
 const cors = require("cors");
 
@@ -397,6 +398,35 @@ app.delete("/delete-user/:id", [verifyToken, isAdmin], async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
+
+
+//// ADD DONATION FORM
+app.post("/donation-form",[verifyToken, isAdmin], async (req, res) => {
+
+  const { title, description, amount, contact, eventFromDate, eventToDate } = req.body;
+
+  if (!title || !description || !amount || !contact || !eventFromDate || !eventToDate) {
+      return res.status(400).json({ message: "All fields are required" });
+  }
+
+  try {
+      const donation = new Donation({
+          title,
+          description,
+          amount,
+          contact,
+          eventFromDate,
+          eventToDate
+      });
+
+      await donation.save();
+      res.status(201).json({ message: "Donation Form Data successfully created", donation });
+  } catch (err) {
+      res.status(500).json({ message: "Something went wrong", error: err });
+  }
+});
+
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

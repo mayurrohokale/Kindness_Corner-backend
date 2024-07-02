@@ -34,8 +34,6 @@ mongoose
     console.error("MongoDB Connection Error: ", err);
   });
 
-
-
 // User SignUp
 app.post("/signup", async (req, res) => {
   const { name, password, email } = req.body;
@@ -91,60 +89,45 @@ const verifyToken = (req, res, next) => {
 
 // isAdmin
 const isAdmin = async (req, res, next) => {
+  user = await User.findOne({ email: req?.user?.email });
 
-  user = await User.findOne({email : req?.user?.email});
-
-  if(user?.role !== 'admin'){
-
+  if (user?.role !== "admin") {
     return res.status(401).json({ message: "Not Access" });
   }
   next();
-  
-}
+};
 
-app.post("/testadmin", [verifyToken,isAdmin], async (req, res) => {
-  try{
-    return res.status(200).json({message: "success"});
-  }catch{
-    return res.status(401).json({message: "Not Access"});
-  }
-})
-
-app.post("/admin-login", async (req, res)=> {
-  try{
-    const { email, password } = req.body;
-  const user = await User.findOne({ email });
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    return res.status(401).json({ message: "Invalid email or password" });
-  }
-  if(user?.role !== 'admin'){
-    return res.status(401).json({message: "UnAuthorized Access"})
-  }
-  const token = jwt.sign(
-    { name: user.name, email: user.email, _id: String(user._id) },
-    JWT_SECRET
-  );
-  res.status(200).json({
-    message: "Login successful",
-    token,
-    user: { name: user.name, email: user.email },
-  });
-  }catch{
-    return res.status(401).json({message: "Invalid Credentials"});
-  }
-})
-
-//get all users
-
-app.get("/users", [verifyToken, isAdmin], async (req, res) => {
+app.post("/testadmin", [verifyToken, isAdmin], async (req, res) => {
   try {
-    const users = await User.find().select("-password");
-    res.status(200).json(users);
-  } catch (error) {
-    res.status(404).json({ message: error.message });
+    return res.status(200).json({ message: "success" });
+  } catch {
+    return res.status(401).json({ message: "Not Access" });
   }
 });
 
+app.post("/admin-login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+    if (user?.role !== "admin") {
+      return res.status(401).json({ message: "UnAuthorized Access" });
+    }
+    const token = jwt.sign(
+      { name: user.name, email: user.email, _id: String(user._id) },
+      JWT_SECRET
+    );
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: { name: user.name, email: user.email },
+    });
+  } catch {
+    return res.status(401).json({ message: "Invalid Credentials" });
+  }
+});
 
 app.get("/me", verifyToken, async (req, res) => {
   try {
@@ -209,14 +192,12 @@ app.get("/volunteers", async (req, res) => {
       const obscuredPhone = volunteer.phone
         ? volunteer.phone.replace(/.(?=.{4})/g, "*")
         : "";
-     
 
       return {
         ...volunteer._doc, // Spread the existing volunteer fields
         email: obscuredEmail,
         phone: obscuredPhone,
-        city : volunteer.city
-       
+        city: volunteer.city,
       };
     });
 
@@ -369,20 +350,17 @@ app.get("/countvotes/:voteFormId", async (req, res) => {
   }
 });
 
-// ADMIN PANEL
+///////////////////////////////// ADMIN PANEL ////////////////////////////////////////////////////////
 
 app.get("/volunteers-admin", async (req, res) => {
   try {
     const volunteers = await User.find();
 
- 
     res.status(200).json(volunteers);
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
-
-
 
 // USERS COUNT
 
@@ -390,14 +368,35 @@ app.get("/users-count", async (req, res) => {
   try {
     const users = await User.find();
     res.status(200).json(users.length);
-    } catch (err) {
-      res.status(500).json({ message: "Something went wrong" });
-      }
-})
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
 
+//get all users
 
+app.get("/users", [verifyToken, isAdmin], async (req, res) => {
+  try {
+    const users = await User.find().select("-password");
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+});
 
-
+// DELETE USSER
+app.delete("/delete-user/:id", [verifyToken, isAdmin], async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await User.findByIdAndDelete(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ message: "User deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

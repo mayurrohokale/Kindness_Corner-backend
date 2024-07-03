@@ -399,30 +399,50 @@ app.delete("/delete-user/:id", [verifyToken, isAdmin], async (req, res) => {
   }
 });
 
-
 //// ADD DONATION FORM
-app.post("/donation-form",[verifyToken, isAdmin], async (req, res) => {
+app.post("/donation-form", [verifyToken, isAdmin], async (req, res) => {
+  const { title, description, amount, contact, eventFromDate, eventToDate } =
+    req.body;
 
-  const { title, description, amount, contact, eventFromDate, eventToDate } = req.body;
-
-  if (!title || !description || !amount || !contact || !eventFromDate || !eventToDate) {
-      return res.status(400).json({ message: "All fields are required" });
+  if (
+    !title ||
+    !description ||
+    !amount ||
+    !contact ||
+    !eventFromDate ||
+    !eventToDate
+  ) {
+    return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
-      const donation = new Donation({
-          title,
-          description,
-          amount,
-          contact,
-          eventFromDate,
-          eventToDate
-      });
+    const donation = new Donation({
+      title,
+      description,
+      amount,
+      contact,
+      eventFromDate,
+      eventToDate,
+    });
 
-      await donation.save();
-      res.status(201).json({ message: "Donation Form Data successfully created", donation });
+    await donation.save();
+    res
+      .status(201)
+      .json({ message: "Donation Form Data successfully created", donation });
   } catch (err) {
-      res.status(500).json({ message: "Something went wrong", error: err });
+    res.status(500).json({ message: "Something went wrong", error: err });
+  }
+});
+
+//get Donation Form Details
+app.get("/get-donation-form", async (req, res) => {
+  try {
+    const donation = await Donation.find();
+    res
+      .status(200)
+      .json({ message: "Donation Form Data successfully fetched", donation });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong", error: err });
   }
 });
 

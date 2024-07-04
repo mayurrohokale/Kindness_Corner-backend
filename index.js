@@ -12,8 +12,6 @@ const Transaction = require("./schema/transactionSchema");
 const cors = require("cors");
 const Blog = require("./schema/blogSchema");
 
-
-
 const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.mongourl || null;
 const JWT_SECRET =
@@ -464,7 +462,7 @@ app.get("/donation-form/:id", async (req, res) => {
 
 ////////BLOGS FORM ///////////////
 
-app.post("/add-blog",[verifyToken], async (req, res) => {
+app.post("/add-blog", [verifyToken], async (req, res) => {
   const { title, description, image, author, date } = req.body;
   try {
     const blog = new Blog({ title, description, image, author, date });
@@ -476,6 +474,29 @@ app.post("/add-blog",[verifyToken], async (req, res) => {
     res.status(500).json({ message: "Something went wrong", error: err });
   }
 });
+
+app.get("/get-blog/:id", [verifyToken], async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+    res.json(blog);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.get("/get-blog", [verifyToken], async (req, res) => {
+  try {
+    const blog = await Blog.find();
+    res.json(blog);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+//////////////////////////////////
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

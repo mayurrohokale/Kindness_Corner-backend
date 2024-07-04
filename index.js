@@ -10,6 +10,9 @@ const User = require("./schema/userSchema");
 const Donation = require("./schema/donationSchema");
 const Transaction = require("./schema/transactionSchema");
 const cors = require("cors");
+const Blog = require("./schema/blogSchema");
+
+
 
 const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.mongourl || null;
@@ -446,7 +449,33 @@ app.get("/get-donation-form", async (req, res) => {
   }
 });
 
+// Route to get a donation form by ID
+app.get("/donation-form/:id", async (req, res) => {
+  try {
+    const donation = await Donation.findById(req.params.id);
+    if (!donation) {
+      return res.status(404).json({ message: "Donation form not found" });
+    }
+    res.json(donation);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
+////////BLOGS FORM ///////////////
+
+app.post("/add-blog",[verifyToken], async (req, res) => {
+  const { title, description, image, author, date } = req.body;
+  try {
+    const blog = new Blog({ title, description, image, author, date });
+    await blog.save();
+    res
+      .status(201)
+      .json({ message: "Blog Form Data successfully created", blog });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong", error: err });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

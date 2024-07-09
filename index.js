@@ -465,7 +465,7 @@ app.get("/donation-form/:id", async (req, res) => {
 app.post("/add-blog", [verifyToken], async (req, res) => {
   const { title, description, image, author, date } = req.body;
   try {
-    const blog = new Blog({ title, description, image, author, date });
+    const blog = new Blog({ title, description, image, author, date, status: 'pending'});
     await blog.save();
     res
       .status(201)
@@ -475,22 +475,47 @@ app.post("/add-blog", [verifyToken], async (req, res) => {
   }
 });
 
-app.get("/get-blog/:id", [verifyToken], async (req, res) => {
+
+app.post("/approve-blog/:id", [verifyToken, isAdmin], async (req, res) => {
+  const { id } = req.params;
   try {
-    const blog = await Blog.findById(req.params.id);
+    const blog = await Blog.findByIdAndUpdate(id, { status: 'approved' }, { new: true });
     if (!blog) {
       return res.status(404).json({ message: "Blog not found" });
     }
-    res.json(blog);
+    res.status(200).json({ message: "Blog approved", blog });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Something went wrong", error: err });
   }
 });
 
-app.get("/get-blog", [verifyToken], async (req, res) => {
+
+// app.get("/get-blog/:id", [verifyToken], async (req, res) => {
+//   try {
+//     const blog = await Blog.findById(req.params.id);
+//     if (!blog) {
+//       return res.status(404).json({ message: "Blog not found" });
+//     }
+//     res.json(blog);
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// });
+
+app.get('/approved-blogs', async (req, res) => {
   try {
-    const blog = await Blog.find();
-    res.json(blog);
+    const blogs = await Blog.find({ status: 'approved' });
+    res.status(200).json(blogs);
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong", error: err });
+  }
+});
+
+
+app.get("/get-blog",[verifyToken, isAdmin], async (req, res) => {
+  try {
+    const blogs = await Blog.find();
+    res.json(blogs);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

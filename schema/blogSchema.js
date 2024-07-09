@@ -11,7 +11,7 @@ const blogSchema = new mongoose.Schema({
   },
   image: {
     type: String,
-    required: true,
+    required: false,
   },
   author: {
     type: String,
@@ -19,9 +19,10 @@ const blogSchema = new mongoose.Schema({
   },
   date: {
     type: Date,
-    required: true,
+    required: false,
     default: Date.now,
   },
+  status: { type: String, enum: ['pending', 'approved'], default: 'pending' },
 });
 
 const Blog = mongoose.model('Blog', blogSchema);

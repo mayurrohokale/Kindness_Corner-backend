@@ -521,6 +521,20 @@ app.get("/get-blog",[verifyToken, isAdmin], async (req, res) => {
   }
 });
 
+//delete blog
+app.delete("/delete-blog/:id", [verifyToken, isAdmin], async (req, res) => {
+  try {
+    const blog = await Blog.findByIdAndDelete(req.params.id);
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+      }
+      res.status(200).json({ message: "Blog deleted", blog });
+      } catch (err) {
+        res.status(500).json({ message: "Something went wrong", error: err });
+        }
+});
+ 
+
 //////////////////////////////////
 
 app.listen(PORT, () => {

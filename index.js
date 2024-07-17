@@ -36,6 +36,10 @@ mongoose
     console.error("MongoDB Connection Error: ", err);
   });
 
+  // Root index
+  app.get("/", (req, res) => {
+    res.status(200).json({message: "welcome to Kindness Corner API!"});
+    });
 // User SignUp
 app.post("/signup", async (req, res) => {
   const { name, password, email } = req.body;

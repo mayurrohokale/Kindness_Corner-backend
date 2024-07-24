@@ -283,7 +283,10 @@ app.get("/volunteers/count", async (req, res) => {
 //   }
 // });
 
-// for Voting
+
+
+
+///////////////////////////////     for Voting  ///////////////////////////////
 
 app.post("/vote", verifyToken, async (req, res) => {
   const { voteFormId, vote } = req.body;
@@ -356,8 +359,12 @@ app.get("/countvotes/:voteFormId", async (req, res) => {
   }
 });
 
+////////////////////////////////////////////////////////////////////////////////////////
+
+
 ///////////////////////////////// ADMIN PANEL ////////////////////////////////////////////////////////
 
+// All volunteers Details without any encryption
 app.get("/volunteers-admin", async (req, res) => {
   try {
     const volunteers = await User.find();
@@ -403,8 +410,9 @@ app.delete("/delete-user/:id", [verifyToken, isAdmin], async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
+////////////////////////////////////////////////////////////////////////////////
 
-//// ADD DONATION FORM
+////////////////     ADD DONATION FORM    ///////////////
 app.post("/donation-form", [verifyToken, isAdmin], async (req, res) => {
   const { title, description, amount, contact, eventFromDate, eventToDate } =
     req.body;
@@ -464,7 +472,7 @@ app.get("/donation-form/:id", async (req, res) => {
   }
 });
 
-////////BLOGS FORM ///////////////
+//////// ////////////////     BLOGS FORM      ///////////////
 
 app.post("/add-blog", [verifyToken], async (req, res) => {
   const { title, description, image, author, date } = req.body;

@@ -36,10 +36,10 @@ mongoose
     console.error("MongoDB Connection Error: ", err);
   });
 
-  // Root index
-  app.get("/", (req, res) => {
-    res.status(200).json({message: "welcome to Kindness Corner API!"});
-    });
+// Root index
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "welcome to Kindness Corner API!" });
+});
 // User SignUp
 app.post("/signup", async (req, res) => {
   const { name, password, email } = req.body;
@@ -469,7 +469,14 @@ app.get("/donation-form/:id", async (req, res) => {
 app.post("/add-blog", [verifyToken], async (req, res) => {
   const { title, description, image, author, date } = req.body;
   try {
-    const blog = new Blog({ title, description, image, author, date, status: 'pending'});
+    const blog = new Blog({
+      title,
+      description,
+      image,
+      author,
+      date,
+      status: "pending",
+    });
     await blog.save();
     res
       .status(201)
@@ -479,11 +486,14 @@ app.post("/add-blog", [verifyToken], async (req, res) => {
   }
 });
 
-
 app.post("/approve-blog/:id", [verifyToken, isAdmin], async (req, res) => {
   const { id } = req.params;
   try {
-    const blog = await Blog.findByIdAndUpdate(id, { status: 'approved' }, { new: true });
+    const blog = await Blog.findByIdAndUpdate(
+      id,
+      { status: "approved" },
+      { new: true }
+    );
     if (!blog) {
       return res.status(404).json({ message: "Blog not found" });
     }
@@ -492,7 +502,6 @@ app.post("/approve-blog/:id", [verifyToken, isAdmin], async (req, res) => {
     res.status(500).json({ message: "Something went wrong", error: err });
   }
 });
-
 
 // app.get("/get-blog/:id", [verifyToken], async (req, res) => {
 //   try {
@@ -506,17 +515,29 @@ app.post("/approve-blog/:id", [verifyToken, isAdmin], async (req, res) => {
 //   }
 // });
 
-app.get('/approved-blogs', async (req, res) => {
+app.get("/approved-blogs", async (req, res) => {
   try {
-    const blogs = await Blog.find({ status: 'approved' });
+    const blogs = await Blog.find({ status: "approved" });
     res.status(200).json(blogs);
   } catch (err) {
     res.status(500).json({ message: "Something went wrong", error: err });
   }
 });
 
+app.get("/approved-blogs/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blog = await Blog.findOne({ _id: id, status: "approved" });
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+    res.status(200).json(blog);
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong", error: err });
+  }
+});
 
-app.get("/get-blog",[verifyToken, isAdmin], async (req, res) => {
+app.get("/get-blog", [verifyToken, isAdmin], async (req, res) => {
   try {
     const blogs = await Blog.find();
     res.json(blogs);
@@ -531,13 +552,12 @@ app.delete("/delete-blog/:id", [verifyToken, isAdmin], async (req, res) => {
     const blog = await Blog.findByIdAndDelete(req.params.id);
     if (!blog) {
       return res.status(404).json({ message: "Blog not found" });
-      }
-      res.status(200).json({ message: "Blog deleted", blog });
-      } catch (err) {
-        res.status(500).json({ message: "Something went wrong", error: err });
-        }
+    }
+    res.status(200).json({ message: "Blog deleted", blog });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong", error: err });
+  }
 });
- 
 
 //////////////////////////////////
 

@@ -414,7 +414,7 @@ app.delete("/delete-user/:id", [verifyToken, isAdmin], async (req, res) => {
 
 ////////////////     ADD DONATION FORM    ///////////////
 app.post("/donation-form", [verifyToken, isAdmin], async (req, res) => {
-  const { title, description, amount, contact, eventFromDate, eventToDate } =
+  const { title, description, amount, contact, eventFromDate, eventToDate, date } =
     req.body;
 
   if (
@@ -436,6 +436,7 @@ app.post("/donation-form", [verifyToken, isAdmin], async (req, res) => {
       contact,
       eventFromDate,
       eventToDate,
+      date,
     });
 
     await donation.save();

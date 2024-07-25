@@ -24,7 +24,12 @@ const donationSchema = new mongoose.Schema({
     eventToDate: {
         type: Date,
         required: true
-    }
+    },
+    date: {
+        type: Date,
+        required: false,
+        default: Date.now,
+    },
 });
 
 module.exports = mongoose.model('Donation', donationSchema);

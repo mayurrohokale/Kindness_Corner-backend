@@ -25,6 +25,10 @@ const donationSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
+    image: {
+        type: String,
+        required: false
+    },
     date: {
         type: Date,
         required: false,

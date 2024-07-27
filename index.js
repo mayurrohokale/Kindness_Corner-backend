@@ -414,7 +414,7 @@ app.delete("/delete-user/:id", [verifyToken, isAdmin], async (req, res) => {
 
 ////////////////     ADD DONATION FORM    ///////////////
 app.post("/donation-form", [verifyToken, isAdmin], async (req, res) => {
-  const { title, description, amount, contact, eventFromDate, eventToDate, date } =
+  const { title, description, amount, contact, eventFromDate, eventToDate, date, image } =
     req.body;
 
   if (
@@ -423,6 +423,7 @@ app.post("/donation-form", [verifyToken, isAdmin], async (req, res) => {
     !amount ||
     !contact ||
     !eventFromDate ||
+    !image ||
     !eventToDate
   ) {
     return res.status(400).json({ message: "All fields are required" });
@@ -437,6 +438,7 @@ app.post("/donation-form", [verifyToken, isAdmin], async (req, res) => {
       eventFromDate,
       eventToDate,
       date,
+      image,
     });
 
     await donation.save();
@@ -471,6 +473,19 @@ app.get("/donation-form/:id", async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+});
+
+// Delete Donation Form
+app.delete("/delete-donation-form/:id",[verifyToken, isAdmin], async (req, res) => {
+  try {
+    const donation = await Donation.findByIdAndDelete(req.params.id);
+    if (!donation) {
+      return res.status(404).json({ message: "Donation form not found" });
+      }
+      res.json({ message: "Donation form deleted successfully" });
+      } catch (err) {
+        res.status(500).json({ message: "Something went wrong", error: err });
+      }
 });
 
 //////// ////////////////     BLOGS FORM      ///////////////

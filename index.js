@@ -93,7 +93,7 @@ const verifyToken = (req, res, next) => {
   });
 };
 
-// isAdmin
+/////////////  isAdmin
 const isAdmin = async (req, res, next) => {
   user = await User.findOne({ email: req?.user?.email });
 
@@ -283,9 +283,6 @@ app.get("/volunteers/count", async (req, res) => {
 //   }
 // });
 
-
-
-
 ///////////////////////////////     for Voting  ///////////////////////////////
 
 app.post("/vote", verifyToken, async (req, res) => {
@@ -361,7 +358,6 @@ app.get("/countvotes/:voteFormId", async (req, res) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-
 ///////////////////////////////// ADMIN PANEL ////////////////////////////////////////////////////////
 
 // All volunteers Details without any encryption
@@ -381,6 +377,37 @@ app.get("/users-count", async (req, res) => {
   try {
     const users = await User.find();
     res.status(200).json(users.length);
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+// Disable users status
+app.put("/disable-user/:userId", [verifyToken, isAdmin], async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { status: "false" },
+      { new: true }
+    );
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+//enable User
+
+app.put("/enable-user/:userId", [verifyToken, isAdmin], async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { status: "true" },
+      { new: true }
+    );
+    res.status(200).json(user);
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
   }
@@ -414,8 +441,16 @@ app.delete("/delete-user/:id", [verifyToken, isAdmin], async (req, res) => {
 
 ////////////////     ADD DONATION FORM    ///////////////
 app.post("/donation-form", [verifyToken, isAdmin], async (req, res) => {
-  const { title, description, amount, contact, eventFromDate, eventToDate, date, image } =
-    req.body;
+  const {
+    title,
+    description,
+    amount,
+    contact,
+    eventFromDate,
+    eventToDate,
+    date,
+    image,
+  } = req.body;
 
   if (
     !title ||
@@ -476,17 +511,21 @@ app.get("/donation-form/:id", async (req, res) => {
 });
 
 // Delete Donation Form
-app.delete("/delete-donation-form/:id",[verifyToken, isAdmin], async (req, res) => {
-  try {
-    const donation = await Donation.findByIdAndDelete(req.params.id);
-    if (!donation) {
-      return res.status(404).json({ message: "Donation form not found" });
+app.delete(
+  "/delete-donation-form/:id",
+  [verifyToken, isAdmin],
+  async (req, res) => {
+    try {
+      const donation = await Donation.findByIdAndDelete(req.params.id);
+      if (!donation) {
+        return res.status(404).json({ message: "Donation form not found" });
       }
       res.json({ message: "Donation form deleted successfully" });
-      } catch (err) {
-        res.status(500).json({ message: "Something went wrong", error: err });
-      }
-});
+    } catch (err) {
+      res.status(500).json({ message: "Something went wrong", error: err });
+    }
+  }
+);
 
 //////// ////////////////     BLOGS FORM      ///////////////
 
@@ -584,7 +623,6 @@ app.delete("/delete-blog/:id", [verifyToken, isAdmin], async (req, res) => {
 });
 
 ///////////////////////////////////////////////////////////////////////////////
-
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

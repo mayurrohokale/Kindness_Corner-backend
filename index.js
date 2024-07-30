@@ -62,20 +62,44 @@ app.post("/signup", async (req, res) => {
 // User login
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email });
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    return res.status(401).json({ message: "Invalid email or password" });
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      console.log("User not found");
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      console.log("Password does not match");
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+    
+    if (user.status === 'false') {
+      console.log("User is disabled");
+      return res.status(403).json({ message: "User is disabled. Please contact support." });
+    }
+
+    const token = jwt.sign(
+      { name: user.name, email: user.email, _id: String(user._id) },
+      JWT_SECRET
+    );
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: { name: user.name, email: user.email },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Something went wrong" });
   }
-  const token = jwt.sign(
-    { name: user.name, email: user.email, _id: String(user._id) },
-    JWT_SECRET
-  );
-  res.status(200).json({
-    message: "Login successful",
-    token,
-    user: { name: user.name, email: user.email },
-  });
 });
+
+
+
 
 // Middleware for verifying JWT
 const verifyToken = (req, res, next) => {
@@ -92,6 +116,21 @@ const verifyToken = (req, res, next) => {
     next();
   });
 };
+
+app.get("/user-status/:userId", [verifyToken], async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findById(userId).select('status');
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ status: user.status });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
 
 /////////////  isAdmin
 const isAdmin = async (req, res, next) => {
@@ -147,6 +186,7 @@ app.get("/me", verifyToken, async (req, res) => {
         is_volunteer: check_user?.is_volunteer,
         phone: check_user?.phone,
         address: check_user?.address,
+        status: check_user?.status
       };
       res
         .status(200)
@@ -381,30 +421,18 @@ app.get("/users-count", async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
-
-// Disable users status
-app.put("/disable-user/:userId", [verifyToken, isAdmin], async (req, res) => {
+app.put("/update-user-status/:userId", [verifyToken, isAdmin], async (req, res) => {
   const { userId } = req.params;
-  try {
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { status: "false" },
-      { new: true }
-    );
-    res.status(200).json(user);
-  } catch (err) {
-    res.status(500).json({ message: "Something went wrong" });
+  const { status } = req.body; 
+
+  if (status !== 'true' && status !== 'false') {
+    return res.status(400).json({ message: "Invalid status value" });
   }
-});
 
-//enable User
-
-app.put("/enable-user/:userId", [verifyToken, isAdmin], async (req, res) => {
-  const { userId } = req.params;
   try {
     const user = await User.findByIdAndUpdate(
       userId,
-      { status: "true" },
+      { status },
       { new: true }
     );
     res.status(200).json(user);

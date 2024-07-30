@@ -12,7 +12,7 @@ const userSchema = mongoose.Schema({
   city: {type:String},
   pincode: {type:Number},
   is_volunteer: {type: Boolean, default:false},
-  status: {type: Boolean, default: true},
+  status: {type: String, default: true},
 });
 
 const User = mongoose.model('User', userSchema);

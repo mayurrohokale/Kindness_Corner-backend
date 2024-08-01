@@ -11,6 +11,7 @@ const Donation = require("./schema/donationSchema");
 const Transaction = require("./schema/transactionSchema");
 const cors = require("cors");
 const Blog = require("./schema/blogSchema");
+const axios = require("axios");
 
 const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.mongourl || null;
@@ -35,6 +36,8 @@ mongoose
   .catch((err) => {
     console.error("MongoDB Connection Error: ", err);
   });
+
+  
 
 // Root index
 app.get("/", (req, res) => {
@@ -79,7 +82,7 @@ app.post("/login", async (req, res) => {
     
     if (user.status === 'false') {
       console.log("User is disabled");
-      return res.status(403).json({ message: "User is disabled. Please contact support." });
+      return res.status(403).json({ message: "Your ID is disabled. Please contact to support." });
     }
 
     const token = jwt.sign(
@@ -263,67 +266,26 @@ app.get("/volunteers/count", async (req, res) => {
   }
 });
 
-// Generate payment link
+///////////////////////// For Payments ///////////////////////
 
-// app.post('/createorder', async (req, res) => {
-//   const { amount, firstname, lastname, email, phone, address } = req.body; // Added firstname, lastname
+//get transactions
 
-//   const options = {
-//     amount: amount * 100, // amount in the smallest currency unit
-//     currency: "INR",
-//     receipt: "receipt#1",
-//     payment_capture: 1
-//   };
-
+// app.get('/transactions', async (req, res) => {
 //   try {
-//     const order = await razorpay.orders.create(options);
-//     const transaction = new Transaction({
-//       firstname,
-//       lastname,
-//       email,
-//       phone,
-//       address,
-//       amount,
-//       order_id: order.id,
-//       status: 'created'
+//     const response = await axios.get('https://api.razorpay.com/v1/payments', {
+//       auth: {
+//         username: process.env.RAZORPAY_KEY_ID,
+//         password: process.env.RAZORPAY_KEY_SECRET
+//       }
 //     });
-//     await transaction.save();
-//     res.json({ orderId: order.id });
+//     res.json(response.data);
 //   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: 'Something went wrong' });
+//     res.status(500).json({ error: error.message });
 //   }
 // });
 
-// // Verify payment and update transaction
-// app.post('/verifypayment', async (req, res) => {
-//   const { order_id, payment_id, razorpay_signature } = req.body;
 
-//   try {
-//     const transaction = await Transaction.findOne({ order_id });
-//     if (!transaction) {
-//       return res.status(404).json({ error: 'Transaction not found' });
-//     }
-
-//     const generated_signature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-//       .update(order_id + "|" + payment_id)
-//       .digest('hex');
-
-//     if (generated_signature === razorpay_signature) {
-//       transaction.payment_id = payment_id;
-//       transaction.status = 'paid';
-//       await transaction.save();
-//       res.json({ status: 'Payment successful' });
-//     } else {
-//       res.status(400).json({ error: 'Invalid signature' });
-//     }
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: 'Something went wrong' });
-//   }
-// });
-
-///////////////////////////////     for Voting  ///////////////////////////////
+///////////////////////////////////  for Voting  ///////////////////////////////
 
 app.post("/vote", verifyToken, async (req, res) => {
   const { voteFormId, vote } = req.body;

@@ -8,6 +8,7 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto"); // Importing crypto module
 const User = require("./schema/userSchema");
 const Donation = require("./schema/donationSchema");
+const Query = require("./schema/Qurey");
 const Transaction = require("./schema/transactionSchema");
 const cors = require("cors");
 const Blog = require("./schema/blogSchema");
@@ -36,8 +37,6 @@ mongoose
   .catch((err) => {
     console.error("MongoDB Connection Error: ", err);
   });
-
-  
 
 // Root index
 app.get("/", (req, res) => {
@@ -79,10 +78,12 @@ app.post("/login", async (req, res) => {
       console.log("Password does not match");
       return res.status(401).json({ message: "Invalid email or password" });
     }
-    
-    if (user.status === 'false') {
+
+    if (user.status === "false") {
       console.log("User is disabled");
-      return res.status(403).json({ message: "Your ID is disabled. Please contact to support." });
+      return res
+        .status(403)
+        .json({ message: "Your ID is disabled. Please contact to support." });
     }
 
     const token = jwt.sign(
@@ -100,9 +101,6 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
-
-
-
 
 // Middleware for verifying JWT
 const verifyToken = (req, res, next) => {
@@ -124,7 +122,7 @@ app.get("/user-status/:userId", [verifyToken], async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const user = await User.findById(userId).select('status');
+    const user = await User.findById(userId).select("status");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -133,7 +131,6 @@ app.get("/user-status/:userId", [verifyToken], async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
-
 
 /////////////  isAdmin
 const isAdmin = async (req, res, next) => {
@@ -189,7 +186,7 @@ app.get("/me", verifyToken, async (req, res) => {
         is_volunteer: check_user?.is_volunteer,
         phone: check_user?.phone,
         address: check_user?.address,
-        status: check_user?.status
+        status: check_user?.status,
       };
       res
         .status(200)
@@ -283,7 +280,6 @@ app.get("/volunteers/count", async (req, res) => {
 //     res.status(500).json({ error: error.message });
 //   }
 // });
-
 
 ///////////////////////////////////  for Voting  ///////////////////////////////
 
@@ -383,25 +379,29 @@ app.get("/users-count", async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
-app.put("/update-user-status/:userId", [verifyToken, isAdmin], async (req, res) => {
-  const { userId } = req.params;
-  const { status } = req.body; 
+app.put(
+  "/update-user-status/:userId",
+  [verifyToken, isAdmin],
+  async (req, res) => {
+    const { userId } = req.params;
+    const { status } = req.body;
 
-  if (status !== 'true' && status !== 'false') {
-    return res.status(400).json({ message: "Invalid status value" });
-  }
+    if (status !== "true" && status !== "false") {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
 
-  try {
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { status },
-      { new: true }
-    );
-    res.status(200).json(user);
-  } catch (err) {
-    res.status(500).json({ message: "Something went wrong" });
+    try {
+      const user = await User.findByIdAndUpdate(
+        userId,
+        { status },
+        { new: true }
+      );
+      res.status(200).json(user);
+    } catch (err) {
+      res.status(500).json({ message: "Something went wrong" });
+    }
   }
-});
+);
 
 //get all users
 
@@ -613,6 +613,54 @@ app.delete("/delete-blog/:id", [verifyToken, isAdmin], async (req, res) => {
 });
 
 ///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+///////////////////// Query API /////////////////////////
+
+// post Query
+app.post("/post-query", async (req, res) => {
+  const { subject, email, description } = req.body;
+  const query = new Query({ subject, email, description });
+  try {
+    await query.save();
+    res.status(201).json({ message: "Query saved successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong", error: err });
+  }
+});
+
+// get Query
+app.get("/get-queries", [isAdmin], async (req, res) => {
+  try {
+    const queries = await Query.find();
+    res.json(queries);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+//  get query by ID
+app.get("/get-query/:id", [isAdmin], async (req, res) => {
+  try {
+    const query = await Query.findById(req.params.id);
+    if (!query) {
+      return res.status(404).json({ message: "Query not found" });
+    }
+    res.json(query);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// delete query by ID
+app.delete("/delete-query/:id", [isAdmin], async (req, res) => {
+  try {
+    await Query.findByIdAndRemove(req.params.id);
+    res.json({ message: "Query deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

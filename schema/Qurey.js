@@ -6,10 +6,10 @@ const querySchema = new mongoose.Schema({
     type: String,
     required: true,
  },
- subject: {
-    type: String,
-    required: true,
- },
+//  subject: {
+//     type: String,
+//     required: true,
+//  },
  description : {
     type: String,
     required: true,

@@ -132,7 +132,7 @@ app.get("/user-status/:userId", [verifyToken], async (req, res) => {
   }
 });
 
-/////////////  isAdmin
+/////////////  isAdmin /////
 const isAdmin = async (req, res, next) => {
   user = await User.findOne({ email: req?.user?.email });
 
@@ -619,8 +619,8 @@ app.delete("/delete-blog/:id", [verifyToken, isAdmin], async (req, res) => {
 
 // post Query
 app.post("/post-query", async (req, res) => {
-  const { subject, email, description } = req.body;
-  const query = new Query({ subject, email, description });
+  const {  email, description } = req.body;
+  const query = new Query({  email, description });
   try {
     await query.save();
     res.status(201).json({ message: "Query saved successfully" });

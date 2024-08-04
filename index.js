@@ -186,6 +186,9 @@ app.get("/me", verifyToken, async (req, res) => {
         is_volunteer: check_user?.is_volunteer,
         phone: check_user?.phone,
         address: check_user?.address,
+        city: check_user?.city,
+        state: check_user?.state,
+        pincode: check_user?.pincode,
         status: check_user?.status,
       };
       res
@@ -244,6 +247,8 @@ app.get("/volunteers", async (req, res) => {
         email: obscuredEmail,
         phone: obscuredPhone,
         city: volunteer.city,
+        address: volunteer.address,
+        pincode: volunteer.pincode,
       };
     });
 
@@ -252,6 +257,14 @@ app.get("/volunteers", async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
+
+//get Volunteer data by ID
+
+
+
+
+
+
 
 // all volunteers count
 app.get("/volunteers/count", async (req, res) => {

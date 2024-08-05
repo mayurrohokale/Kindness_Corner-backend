@@ -453,10 +453,10 @@ app.get('/active-users-count', [verifyToken, isAdmin], async (req,res) => {
 });
 
 // disable users count
-app.get('/disable-users-count', [verifyToken, isAdmin], async (req, res) => {
+app.get('/disable-users-count', async (req, res) => {
   try{
     const disableUsers = await User.countDocuments({status: false});
-    res.status(200).json({disableUsers});
+    res.status(200).send({disableUsers});
   }catch(error){
     res.status(404).json({message: error.message});
   }

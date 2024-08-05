@@ -440,7 +440,6 @@ app.delete("/delete-user/:id", [verifyToken, isAdmin], async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
-
 // active user count 
 app.get('/active-users-count', async (req,res) => {
   try{

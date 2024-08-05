@@ -440,6 +440,29 @@ app.delete("/delete-user/:id", [verifyToken, isAdmin], async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
+
+// active user count 
+app.get('/active-users-count', [verifyToken, isAdmin], async (req,res) => {
+  try{
+    const activeUsers = await User.countDocuments({status: true});
+    res.status(200).json({activeUsers});
+
+  } catch(error){
+    res.status(404).json({message: error.message});
+  }
+});
+
+// disable users count
+app.get('/disable-users-count', [verifyToken, isAdmin], async (req, res) => {
+  try{
+    const disableUsers = await User.countDocuments({status: false});
+    res.status(200).json({disableUsers});
+  }catch(error){
+    res.status(404).json({message: error.message});
+  }
+})
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 ////////////////     ADD DONATION FORM    ///////////////

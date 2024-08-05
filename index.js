@@ -442,7 +442,7 @@ app.delete("/delete-user/:id", [verifyToken, isAdmin], async (req, res) => {
 });
 
 // active user count 
-app.get('/active-users-count', [verifyToken, isAdmin], async (req,res) => {
+app.get('/active-users-count', async (req,res) => {
   try{
     const activeUsers = await User.countDocuments({status: true});
     res.status(200).json({activeUsers});

@@ -13,6 +13,7 @@ const Transaction = require("./schema/transactionSchema");
 const cors = require("cors");
 const Blog = require("./schema/blogSchema");
 const axios = require("axios");
+const nodemailer = require("nodemailer");
 
 const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.mongourl || null;

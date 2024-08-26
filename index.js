@@ -33,7 +33,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const frontendUrl =  `http://localhost:3000`;
+const frontendUrl = process.env.FRONT_URL || `http://localhost:3000`;
 
 
 const app = express();

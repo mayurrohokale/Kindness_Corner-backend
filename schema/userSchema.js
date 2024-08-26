@@ -13,6 +13,8 @@ const userSchema = mongoose.Schema({
   pincode: {type:Number},
   is_volunteer: {type: Boolean, default:false},
   status: {type: String, default: true},
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date },
 });
 
 const User = mongoose.model('User', userSchema);

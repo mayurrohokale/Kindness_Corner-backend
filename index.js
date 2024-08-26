@@ -25,10 +25,11 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 const transporter = nodemailer.createTransport({
-  service: 'gmail', 
+  service: "gmail",
+  secure:true,
   auth: {
-    user: process.env.EMAIL_USER, 
-    pass: process.env.EMAIL_PASS, 
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
@@ -139,6 +140,79 @@ app.get("/user-status/:userId", [verifyToken], async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
+
+// Forgot Password
+app.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const secret = JWT_SECRET + user.password;
+    const token = jwt.sign({ userId: user._id, email: user.email }, secret, { expiresIn: "5m" });
+
+    const resetLink = `${req.protocol}://${req.get('host')}/reset-password/${token}`;
+
+    const receiver = {
+      from: "kindnesshelp@gmail.com",
+      to: user.email,
+      subject: "Reset Password Request",
+      text: `Click on this link to generate your new password: ${resetLink}`
+    };
+
+    await transporter.sendMail(receiver);
+    res.status(200).json({ message: "Password reset link sent to your email" });
+
+  } catch (error) {
+    console.error('Error in forgot password:', error);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+});
+
+////// Reset Password
+
+app.post('/reset-password/:token', async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  try {
+    // Decode the token payload
+    const decoded = jwt.decode(token);
+    const { userId, email } = decoded;
+
+    // Fetch the user from the database
+    const user = await User.findOne({ _id: userId, email });
+
+    if (!user) {
+      return res.status(404).json({ message: "Invalid token or user not found" });
+    }
+
+    // Verify the token with the secret (JWT_SECRET + user's password)
+    const secret = JWT_SECRET + user.password;
+    jwt.verify(token, secret);
+
+    // Hash the new password before saving it
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Update the user's password in the database
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({ message: "Password has been reset successfully" });
+
+  } catch (error) {
+    console.error('Error in reset password:', error);
+    res.status(500).json({ message: 'Something went wrong' });
+  }
+});
+
+
+
 
 /////////////  isAdmin /////
 const isAdmin = async (req, res, next) => {
@@ -267,12 +341,6 @@ app.get("/volunteers", async (req, res) => {
 });
 
 //get Volunteer data by ID
-
-
-
-
-
-
 
 // all volunteers count
 app.get("/volunteers/count", async (req, res) => {
@@ -448,27 +516,25 @@ app.delete("/delete-user/:id", [verifyToken, isAdmin], async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
-// active user count 
-app.get('/active-users-count', async (req,res) => {
-  try{
-    const activeUsers = await User.countDocuments({status: true});
-    res.status(200).json({activeUsers});
-
-  } catch(error){
-    res.status(404).json({message: error.message});
+// active user count
+app.get("/active-users-count", async (req, res) => {
+  try {
+    const activeUsers = await User.countDocuments({ status: true });
+    res.status(200).json({ activeUsers });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
   }
 });
 
 // disable users count
-app.get('/disable-users-count', async (req, res) => {
-  try{
-    const disableUsers = await User.countDocuments({status: false});
-    res.status(200).send({disableUsers});
-  }catch(error){
-    res.status(404).json({message: error.message});
+app.get("/disable-users-count", async (req, res) => {
+  try {
+    const disableUsers = await User.countDocuments({ status: false });
+    res.status(200).send({ disableUsers });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
   }
-})
-
+});
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -662,8 +728,8 @@ app.delete("/delete-blog/:id", [verifyToken, isAdmin], async (req, res) => {
 
 // post Query
 app.post("/post-query", async (req, res) => {
-  const {  email, description } = req.body;
-  const query = new Query({  email, description });
+  const { email, description } = req.body;
+  const query = new Query({ email, description });
   try {
     await query.save();
     res.status(201).json({ message: "Query saved successfully" });
@@ -704,8 +770,6 @@ app.delete("/delete-query/:id", [isAdmin], async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
-
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

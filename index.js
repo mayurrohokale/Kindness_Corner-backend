@@ -33,6 +33,9 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+const frontendUrl =  `http://localhost:3000`;
+
+
 const app = express();
 
 app.use(cors());
@@ -155,7 +158,7 @@ app.post('/forgot-password', async (req, res) => {
     const secret = JWT_SECRET + user.password;
     const token = jwt.sign({ userId: user._id, email: user.email }, secret, { expiresIn: "5m" });
 
-    const resetLink = `${req.protocol}://${req.get('host')}/reset-password/${token}`;
+    const resetLink = `${frontendUrl}/reset-password/${token}`;
 
     const receiver = {
       from: "kindnesshelp@gmail.com",
@@ -173,7 +176,7 @@ app.post('/forgot-password', async (req, res) => {
   }
 });
 
-////// Reset Password
+////////////---- Reset Password -----///////////////
 
 app.post('/reset-password/:token', async (req, res) => {
   const { token } = req.params;

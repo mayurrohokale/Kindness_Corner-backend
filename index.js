@@ -33,7 +33,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const frontendUrl = process.env.FRONT_URL || `http://localhost:3000`;
+const frontendUrl = process.env.FRONT_URL || `http://localhost:3000` ;
 
 
 const app = express();
@@ -156,9 +156,10 @@ app.post('/forgot-password', async (req, res) => {
     }
 
     const secret = JWT_SECRET + user.password;
-    const token = jwt.sign({ userId: user._id, email: user.email }, secret, { expiresIn: "5m" });
+    const token = jwt.sign({ userId: user._id, email: user.email }, secret, { expiresIn: "15m" });
 
     const resetLink = `${frontendUrl}/reset-password/${token}`;
+    
 
     const receiver = {
       from: "kindnesshelp@gmail.com",
@@ -185,18 +186,29 @@ app.post('/reset-password/:token', async (req, res) => {
   try {
     // Decode the token payload
     const decoded = jwt.decode(token);
+    if (!decoded) {
+      return res.status(400).json({ error: 'Invalid token' });
+    }
+
     const { userId, email } = decoded;
 
     // Fetch the user from the database
     const user = await User.findOne({ _id: userId, email });
 
     if (!user) {
-      return res.status(404).json({ message: "Invalid token or user not found" });
+      return res.status(404).json({ error: "UserNotFound", message: "Invalid token or user not found" });
     }
 
     // Verify the token with the secret (JWT_SECRET + user's password)
     const secret = JWT_SECRET + user.password;
-    jwt.verify(token, secret);
+    try {
+      jwt.verify(token, secret);
+    } catch (err) {
+      if (err.name === 'TokenExpiredError') {
+        return res.status(400).json({ error: "TokenExpired", message: "Reset link has expired" });
+      }
+      return res.status(400).json({ error: "InvalidToken", message: "Invalid reset token" });
+    }
 
     // Hash the new password before saving it
     const salt = await bcrypt.genSalt(10);
@@ -206,11 +218,11 @@ app.post('/reset-password/:token', async (req, res) => {
     user.password = hashedPassword;
     await user.save();
 
-    res.status(200).json({ message: "Password has been reset successfully" });
+    return res.status(200).json({ success: true, message: "Password has been reset successfully" });
 
   } catch (error) {
     console.error('Error in reset password:', error);
-    res.status(500).json({ message: 'Something went wrong' });
+    return res.status(500).json({ message: 'Something went wrong' });
   }
 });
 

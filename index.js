@@ -156,9 +156,9 @@ app.post('/forgot-password', async (req, res) => {
     }
 
     const secret = JWT_SECRET + user.password;
-    const acesstoken = jwt.sign({ userId: user._id, email: user.email }, secret, { expiresIn: "15m" });
+    const token = jwt.sign({ userId: user._id, email: user.email }, secret, { expiresIn: "15m" });
 
-    const resetLink = `${frontendUrl}/reset-password/${acesstoken}`;
+    const resetLink = `${frontendUrl}/reset-password/${token}`;
     
 
     const receiver = {
@@ -180,12 +180,12 @@ app.post('/forgot-password', async (req, res) => {
 ////////////---- Reset Password -----///////////////
 
 app.post('/reset-password/:token', async (req, res) => {
-  const { acesstoken } = req.params;
+  const { token } = req.params;
   const { password } = req.body;
 
   try {
     // Decode the token payload
-    const decoded = jwt.decode(acesstoken);
+    const decoded = jwt.decode(token);
     if (!decoded) {
       return res.status(400).json({ error: 'Invalid token' });
     }

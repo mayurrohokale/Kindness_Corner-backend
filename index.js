@@ -15,6 +15,7 @@ const Blog = require("./schema/blogSchema");
 const axios = require("axios");
 const nodemailer = require("nodemailer");
 const OTP_schema = require("./schema/OTP_Schema");
+const OTP_Schema = require("./schema/OTP_Schema");
 
 const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.mongourl || null;
@@ -178,7 +179,7 @@ app.post("/send-otp", async (req, res) => {
     <p style="font-size:1.1em">Hi,</p>
     <p>Plese Use the Following One Time Password (OTP) for Login into your Account. OTP is valid for 10 minutes</p>
     <h1 style="font-size: 20px; font: bold; text:center">Verification Code</h1>
-    <h2 style="font-size: 20px; margin: 0 auto;width: max-content;padding: 0 10px;color: black;border-radius: 4px;letter-spacing: 8px;">${otp}</h2>
+    <h2 style="font-size: 30px; margin: 0 auto;width: max-content;padding: 0 10px;color: black;border-radius: 4px;letter-spacing: 8px;">${otp}</h2>
     <p style="font-size:0.9em;">Regards,<br />Kindness Corner</p>
     <hr style="border:none;border-top:1px solid #eee" />
     <div style="float:right;padding:8px 0;color:#aaa;font-size:0.8em;line-height:1;font-weight:300">
@@ -193,6 +194,25 @@ app.post("/send-otp", async (req, res) => {
     res.status(200).json({ message: "OTP sent to your email" });
   } catch (err) {
     console.error("Error in sending OTP:", err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+//////// verify-Otp ////////
+app.post("/verify-otp", async (req, res) => {
+  const { email, otp } = req.body;
+  try {
+    const OTP_DOC = await OTP_schema.findOne({ email });
+    if (!OTP_DOC) {
+      return res.status(404).json({ message: "OTP not found" });
+    }
+    if (OTP_DOC.otp !== otp) {
+      return res.status(401).json({ message: "Invalid OTP" });
+    }
+    res.status(200).json({ message: "OTP verified successfully" });
+    await OTP_Schema.deleteOne({ _id: OTP_DOC._id });
+  } catch (err) {
+    console.error("Error in verifying OTP:", err);
     res.status(500).json({ message: "Something went wrong" });
   }
 });

@@ -13,7 +13,8 @@ const OTPSchema = new mongoose.Schema({
             createdAt: {
                 type: Date,
                 default: Date.now,
-                expires: 60* 5,
+                expires: 60 * 10,
+                
             }
 });
 module.exports = mongoose.model('OTP', OTPSchema);

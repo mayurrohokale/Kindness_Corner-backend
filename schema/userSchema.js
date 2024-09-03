@@ -15,6 +15,7 @@ const userSchema = mongoose.Schema({
   status: {type: String, default: true},
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
+  isEmail_verified: {type: Boolean}
 });
 
 const User = mongoose.model('User', userSchema);

@@ -15,7 +15,7 @@ const Blog = require("./schema/blogSchema");
 const axios = require("axios");
 const nodemailer = require("nodemailer");
 const OTP_schema = require("./schema/OTP_Schema");
-const OTP_Schema = require("./schema/OTP_Schema");
+
 
 const PORT = process.env.PORT || 8000;
 const MONGO_URL = process.env.mongourl || null;
@@ -74,7 +74,7 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-// User login
+//User login
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -115,7 +115,80 @@ app.post("/login", async (req, res) => {
   }
 });
 
+
+
+// app.post("/login", async (req, res) => {
+//   const { email, password } = req.body;
+
+//   try {
+//     const user = await User.findOne({ email });
+
+//     if (!user) {
+//       console.log("User not found");
+//       return res.status(401).json({ message: "Invalid email or password" });
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       console.log("Password does not match");
+//       return res.status(401).json({ message: "Invalid email or password" });
+//     }
+
+//     if (user.status === "false") {
+//       console.log("User is disabled");
+//       return res
+//         .status(403)
+//         .json({ message: "Your ID is disabled. Please contact support." });
+//     }
+
+//     // Generate a 4-digit OTP
+//     const otp = Math.floor(1000 + Math.random() * 9000).toString();
+//     // const otpExpires = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
+
+//     const OTP_DOC = new OTP_schema({
+//       email,
+//       otp,
+//     });
+//     await OTP_DOC.save();
+
+//     // Send the OTP to the user's email
+//     const mailOptions = {
+//       from: process.env.EMAIL_USER,
+//       to: email,
+//       subject: "Your OTP for login",
+//       // html: `<h1>Your OTP is <strong style="font-size: 35px;">${otp}</strong>. It is valid for 10 minutes.</h1>`,
+//       html: `<div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
+//   <div style="margin:50px auto;width:70%;padding:20px 0">
+//     <div style="border-bottom:1px solid #eee">
+//       <a href="https://kindness-corner.vercel.app/" style="font-size:1.4em;color: #2196F3;text-decoration:none;font-weight:600">Kindness Corner</a>
+//     </div>
+//     <p style="font-size:1.1em">Hi,</p>
+//     <p>Plese Use the Following One Time Password (OTP) for Login into your Account. OTP is valid for 10 minutes</p>
+//     <h1 style="font-size: 20px; font: bold; text:center">Verification Code</h1>
+//     <h2 style="font-size: 30px; margin: 0 auto;width: max-content;padding: 0 10px;color: black;border-radius: 4px;letter-spacing: 8px;">${otp}</h2>
+//     <p style="font-size:0.9em;">Regards,<br />Kindness Corner</p>
+//     <hr style="border:none;border-top:1px solid #eee" />
+//     <div style="float:right;padding:8px 0;color:#aaa;font-size:0.8em;line-height:1;font-weight:300">
+//       <p>Kindnesshelp Inc</p>
+//       <p>Pune, India</p>
+//     </div>
+//   </div>
+// </div>`,
+//     };
+//     await transporter.sendMail(mailOptions);
+
+//     res.status(200).json({ message: "OTP sent to your email" });
+//   } catch (error) {
+//     console.error("Login error:", error);
+//     res.status(500).json({ message: "Something went wrong" });
+//   }
+// });
+
+
 // Middleware for verifying JWT
+
+
+
 const verifyToken = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
 
@@ -198,10 +271,11 @@ app.post("/send-otp", async (req, res) => {
   }
 });
 
-//////// verify-Otp ////////
+////////------/// verify-Otp   ////------- ////////
 app.post("/verify-otp", async (req, res) => {
   const { email, otp } = req.body;
   try {
+    const user = await User.findOne({ email });
     const OTP_DOC = await OTP_schema.findOne({ email });
     if (!OTP_DOC) {
       return res.status(404).json({ message: "OTP not found" });
@@ -209,8 +283,18 @@ app.post("/verify-otp", async (req, res) => {
     if (OTP_DOC.otp !== otp) {
       return res.status(401).json({ message: "Invalid OTP" });
     }
-    res.status(200).json({ message: "OTP verified successfully" });
-    await OTP_Schema.deleteOne({ _id: OTP_DOC._id });
+    
+    user.isEmail_verified = true;
+    await user.save();
+ 
+    await OTP_schema.deleteOne({email});
+
+    res.status(200).json({
+      message: "OTP verified successfully, also Email Verified",
+      user: { name: user.name, email: user.email },
+    });
+  
+  
   } catch (err) {
     console.error("Error in verifying OTP:", err);
     res.status(500).json({ message: "Something went wrong" });

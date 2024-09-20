@@ -98,7 +98,7 @@ app.post("/signup", async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Your OTP for login",
+      subject: "Your OTP for Registration",
       // html: `<h1>Your OTP is <strong style="font-size: 35px;">${otp}</strong>. It is valid for 10 minutes.</h1>`,
       html: `<div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
   <div style="margin:50px auto;width:70%;padding:20px 0">
@@ -106,7 +106,7 @@ app.post("/signup", async (req, res) => {
       <a href="https://kindness-corner.vercel.app/" style="font-size:1.4em;color: #2196F3;text-decoration:none;font-weight:600">Kindness Corner</a>
     </div>
     <p style="font-size:1.1em">Hi,</p>
-    <p>Plese Use the Following One Time Password (OTP) for Login into your Account. OTP is valid for 10 minutes</p>
+    <p>Plese Use the Following One Time Password (OTP) for Sign In into your Account. OTP is valid for 10 minutes</p>
     <h1 style="font-size: 20px; font: bold; text:center">Verification Code</h1>
     <h2 style="font-size: 30px; margin: 0 auto;width: max-content;padding: 0 10px;color: black;border-radius: 4px;letter-spacing: 8px;">${otp}</h2>
     <p style="font-size:0.9em;">Regards,<br />Kindness Corner</p>

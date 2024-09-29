@@ -84,6 +84,12 @@ app.post("/signup", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ email, name, password: hashedPassword });
     const user_data = { name: name, email: email, _id: String(user._id) }; 
+    let existingOTP = await OTP_schema.findOne({ email });
+
+    // If an OTP exists, either delete it or reuse it
+    if (existingOTP) {
+      await OTP_schema.deleteOne({ email }); // Delete the old OTP
+    }
 
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     // const otpExpires = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
